@@ -1,16 +1,22 @@
 const usersModel = require('../models/users');
 
-const getUsers = async (req, res) => {
+const createUser = async (req, res) => {
   try {
-    const users = await usersModel.getUsers();
-    res.json(users);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error retrieving users');
+    // Basic input validation (you'll want to enhance this)
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Missing required informations' });
+    }
+    
+
+    // Creating the user
+    const newUser = await usersModel.createUser({ username, email, password });
+
+    res.status(201).json(newUser);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error creating user' });
   }
 };
 
-// ... other controller functions
-
-module.exports = { getUsers };
-
+module.exports = { createUser };
