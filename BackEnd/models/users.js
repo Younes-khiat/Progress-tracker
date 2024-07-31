@@ -1,10 +1,15 @@
 const pool = require('../db'); 
 const bcrypt = require('bcrypt'); // For password hashing
-
+const findUserByEmail = async (email) => {
+  return (await pool.query('SELECT 1 FROM users WHERE email = $1 LIMIT 1',email))
+}
 const createUser = async (user) => {
   try {
     // Hash the password before storing it
     const hashedPassword = await bcrypt.hash(user.password, 10);
+
+    //checking if the user already exists
+    
 
     // Create the user
     const newUser = await pool.query(
@@ -19,4 +24,4 @@ const createUser = async (user) => {
   }
 };
 
-module.exports = { createUser };
+module.exports = { createUser, findUserByEmail };

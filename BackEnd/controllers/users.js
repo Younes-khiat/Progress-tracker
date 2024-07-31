@@ -8,6 +8,11 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: 'Missing required informations' });
     }
     
+    //checking if user already exists
+    const existingUser = await usersModel.findUserByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({ message: 'User already exists' });
+    }
 
     // Creating the user
     const newUser = await usersModel.createUser({ username, email, password });
