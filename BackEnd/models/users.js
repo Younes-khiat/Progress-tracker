@@ -8,14 +8,14 @@ const findUserByEmail = async (email) => {
 
 //finding user by token to verifythe email of the user
 const findUserByVerificationToken = async (token) => {
-  return (await pool.query('SELECT 1 FROM users WHERE  token= $1 LIMIT 1',[token]))
+  return (await pool.query('SELECT * FROM users WHERE  token= $1 LIMIT 1',[token]))
 
 }
 
 //verifying the email of the user
 const verifyUser = async (userId) => {
   try {
-    await pool.query('UPDATE users SET verified = true, verificationTokenExpiry = null WHERE user_id = $1', [userId]);
+    await pool.query('UPDATE users SET user_status = true, tokenexpiry = null WHERE user_id = $1', [userId]);
   } catch (error) {
     console.error(error);
     throw error;
@@ -42,14 +42,14 @@ const createUser = async (user) => {
 
     // Create the user
     const newUser = await pool.query(
-      'INSERT INTO users (username, email, passwordd) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      'INSERT INTO users (name, surname, user_name, profile_picture, email, password, token, tokenexpiry) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
       [user.name, user.surname, user.username, user.profilePicture, user.email, hashedPassword, user.verificationToken, user.verificationTokenExpiry]
     );
 
     return newUser.rows[0];
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An error occurred while creating the user' });
+    // res.status(500).json({ message: 'An error occurred while creating the user' });
   }
 };
 

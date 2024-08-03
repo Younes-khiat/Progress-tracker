@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const validator= require('validator');
 const usersModel = require('../models/users');
 const verifyingEmail = require('./sendEmailVerification');
 
@@ -12,12 +13,12 @@ const createUser = async (req, res) => {
     
     //checking if user already exists
     const existingUser = await usersModel.findUserByEmail(email);
-    if (existingUser) {
+    if (existingUser.rowCount > 0) {
       return res.status(409).json({ message: 'User already exists' });
     }
 
     // Password strength check
-    if (!validator.isStrongPassword(user.password, {
+    if (!validator.isStrongPassword(password, {
       minLength: 8,
       minLowercase: 1,
       minUppercase: 1,
@@ -29,14 +30,15 @@ const createUser = async (req, res) => {
 
     //generating a token
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 3600000); // Expires in 1 hour
+    const verificationTokenExpiry = new Date(Date.now() + 60000); // Expires in 1 minute
+    console.log(verificationTokenExpiry);
 
     // Creating the user
     const newUser = await usersModel.createUser({name, surname, username, profilePicture, email, password, verificationToken, verificationTokenExpiry });
 
     // Send verification email
-    const link = `http://your-app-url/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
-    verifyingEmail.sendEmail(user.email, 'Verify Your Email', `Click here to verify your email: ${link}`);
+    const link = `http://localhost:3001/users/register/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
+    verifyingEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
     res.status(201).json({ message: 'User created. Please verify your email.' });
 
     res.status(201).json(newUser);
