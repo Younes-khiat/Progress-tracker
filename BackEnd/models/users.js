@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt'); // For password hashing
 
 //finding user by the email he provided for checking if user already exists
 const findUserByEmail = async (email) => {
-  return (await pool.query('SELECT 1 FROM users WHERE email = $1 LIMIT 1',[email]))
+  return (await pool.query('SELECT * FROM users WHERE email = $1 LIMIT 1',[email]))
 }
 
 //finding user by token to verifythe email of the user
@@ -25,7 +25,7 @@ const verifyUser = async (userId) => {
 //updating the token in the databse
 const updateVerificationToken = async (userId, verificationToken, verificationTokenExpiry) => {
   try {
-    await pool.query('UPDATE users SET verificationToken = $1, verificationTokenExpiry = $2 WHERE user_id = $3', [verificationToken, verificationTokenExpiry, userId]);
+    await pool.query('UPDATE users SET token = $1, tokenexpiry = $2 WHERE user_id = $3', [verificationToken, verificationTokenExpiry, userId]);
   } catch (error) {
     console.error(error);
     throw error;

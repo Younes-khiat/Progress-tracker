@@ -30,14 +30,14 @@ const createUser = async (req, res) => {
 
     //generating a token
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 60000); // Expires in 1 minute
-    console.log(verificationTokenExpiry);
+    const verificationTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
+    console.log((verificationTokenExpiry));
 
     // Creating the user
     const newUser = await usersModel.createUser({name, surname, username, profilePicture, email, password, verificationToken, verificationTokenExpiry });
 
     // Send verification email
-    const link = `http://localhost:3001/users/register/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
+    const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
     verifyingEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
     res.status(201).json({ message: 'User created. Please verify your email.' });
 
