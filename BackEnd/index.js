@@ -1,13 +1,14 @@
 //و منذ متى يخشى المنايا مريدها
 const express = require('express'); //importing express from npm
-const register = require('./routes/users') //importing creating user router
+const userRouter = require('./routes/users') //importing creating user router
+const protectedRouter = require('./routes/protected');//importing protected code that need authentification
 const app = express();
 const port = 3001;
 
 
 app.use(express.json());
-app.use('/users', register);
-
+app.use('/users', userRouter);
+app.use('/protected',protectedRouter);
 
 // app.get('/test', async (req, res) => {
 //     try {

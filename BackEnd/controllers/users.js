@@ -1,7 +1,11 @@
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const validator= require('validator');
+const jwt = require('jsonwebtoken');
 const usersModel = require('../models/users');
 const verifyingEmail = require('./sendEmailVerification');
+require('dotenv').config();
+
 
 const createUser = async (req, res) => {
   try {
@@ -48,4 +52,31 @@ const createUser = async (req, res) => {
   }
 };
 
-module.exports = { createUser};
+// login
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find the user by email 
+    const user = await usersModel.findUserByEmail(email); // Implement this function
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.rows[0].password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error logging in' });
+  }
+};
+
+module.exports = { createUser, loginUser};
