@@ -24,7 +24,7 @@ router.get('/verify-email', async (req, res) => {
         }
     
         //verifying if the token still usable
-        const now = Date.now();
+        const now = Date.now() + 60000;
         console.log(now)
         console.log(user.rows[0].tokenexpiry);
         console.log(user.rows[0]);

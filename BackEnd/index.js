@@ -8,7 +8,7 @@ const port = 3001;
 
 app.use(express.json());
 app.use('/users', userRouter);
-app.use('/protected',protectedRouter);
+app.use('/protected', protectedRouter);
 
 // app.get('/test', async (req, res) => {
 //     try {
