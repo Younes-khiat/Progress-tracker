@@ -55,8 +55,7 @@ const createUser = async (req, res) => {
 // login
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  console.log(email + password);
-  console.log(1);
+  
   try {
     //check if the user has provided email and password
     if (!email || !password) {
@@ -66,21 +65,19 @@ const loginUser = async (req, res) => {
 
     // Find the user by email 
     const user = await usersModel.findUserByEmail(email); 
-    console.log(2);
+
     if (user.rowCount == 0) {
       return res.status(401).json({ message: 'Invalid email' });
     }
-    console.log(2.5);
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.rows[0].password);
-    console.log(3);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password' });
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '2m' });
+    const token = jwt.sign({ userId: user.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1m' });
 
     res.json({ token });
   } catch (error) {
