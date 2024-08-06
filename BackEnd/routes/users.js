@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const usersController = require('../controllers/users');
 const usersModel = require('../models/users');
-const verifyingEmail = require('../controllers/sendEmailVerification');
+const sendEmail = require('../controllers/sendEmailVerification');
 
 //registring link
 router.post('/register', usersController.createUser);
@@ -25,14 +25,10 @@ router.get('/verify-email', async (req, res) => {
     
         //verifying if the token still usable
         const now = Date.now() + 60000;
-        console.log(now)
-        console.log(user.rows[0].tokenexpiry);
-        console.log(user.rows[0]);
         if (user.rows[0].tokenexpiry < now) {
             console.log(1);
             res.status(400).json({ message: 'Token expired' });
             res.redirect('/resend-verification');//if not usable resend verification email
-
         }
     
         //if token usable verify the user
@@ -61,7 +57,7 @@ router.post('/resend-verification', async (req, res) => {
 
       // Send the verification email
       const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;
-      verifyingEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
+      sendEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
       res.status(200).json({ message: 'Verification email sent successfully' });
     } catch (error) {
       console.error(error);
@@ -71,5 +67,34 @@ router.post('/resend-verification', async (req, res) => {
 
 //logging link 
 router.post('/login', usersController.loginUser);  
+
+//reset password
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await usersModel.findUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    //generating a token for reset password
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
+
+    await usersModel.updatePasswordResetToken(user.id, resetToken, resetTokenExpiry);
+
+    const resetLink = `http://localhost:3001/users/reset-password?token=${resetToken}`;
+    await sendEmail(user.email, 'Password Reset', `Click here to reset your password: ${resetLink}`);
+
+    res.status(200).json({ message: 'Password reset email sent' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error sending password reset email' });
+  }
+});
+
+//reseting password
+router.post('/reset-password', usersController.resetPassword);
 
 module.exports = router;

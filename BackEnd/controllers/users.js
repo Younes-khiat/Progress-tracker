@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const validator= require('validator');
 const jwt = require('jsonwebtoken');
 const usersModel = require('../models/users');
-const verifyingEmail = require('./sendEmailVerification');
+const sendEmail = require('./sendEmailVerification');
 require('dotenv').config();
 
 
@@ -42,7 +42,7 @@ const createUser = async (req, res) => {
 
     // Send verification email
     const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
-    verifyingEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
+    sendEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
     res.status(201).json({ message: 'User created. Please verify your email.' });
 
     res.status(201).json(newUser);
@@ -77,7 +77,7 @@ const loginUser = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1m' });
+    const token = jwt.sign({ userId: user.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1m' });//modify this
 
     res.json({ token });
   } catch (error) {
@@ -86,4 +86,42 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { createUser, loginUser};
+//reseting password
+const resetPassword = async (req,res) => {
+  const { resetToken, newPassword } = req.body;
+
+  try {
+    const user = await usersModel.findUserByResetToken(resetToken);
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid token' });
+    }
+
+    //verifying if the token still usable
+    const now = Date.now() + 60000;
+    if (user.rows[0].resettokenexpiry < now) {
+        res.status(400).json({ message: 'resetToken expired try over later' });
+    }
+
+    // Password strength check
+    if (!validator.isStrongPassword(newPassword, {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1
+    })) {
+      throw new Error('Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one symbol');
+    }
+
+    //hashing the password and save it in the data base
+    const hashedPassword = bcrypt.hash(newPassword, 10);
+    await usersModel.updateUserPassword(user.id, hashedPassword, null, null); // Invalidate reset token
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error resetting password' });
+  }
+}
+
+module.exports = { createUser, loginUser, resetPassword};

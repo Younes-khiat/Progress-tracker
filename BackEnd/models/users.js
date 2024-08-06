@@ -32,8 +32,6 @@ const updateVerificationToken = async (userId, verificationToken, verificationTo
   }
 };
 
-
-
 //sending user informations to the database for creation
 const createUser = async (user) => {
   try {
@@ -53,4 +51,44 @@ const createUser = async (user) => {
   }
 };
 
-module.exports = { createUser, findUserByEmail, findUserByVerificationToken, verifyUser, updateVerificationToken};
+//update the token of reset password
+const updatePasswordResetToken = async (userId, token, expiry) => {
+  try {
+    await pool.query('UPDATE users SET resettoken = $1, resettokenexpiry = $2 WHERE user_id = $3', [token, expiry, userId]);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+//find user by resetToken to update his
+const findUserByResetToken = async (token) => {
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE reset_token = $1', [token]);
+    return result.rows[0] && result.rowCount;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+//update user password
+const updateUserPassword = async (userId, newPassword) => {
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password = $1, resettoken = NULL, resettokenexpiry = NULL WHERE user_id = $2', [hashedPassword, userId]);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+module.exports = { createUser,
+                   findUserByEmail,
+                   findUserByVerificationToken, 
+                   verifyUser, 
+                   updateVerificationToken, 
+                   updatePasswordResetToken,
+                   updateUserPassword,
+                   findUserByResetToken
+                  };
