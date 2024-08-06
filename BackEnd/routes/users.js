@@ -71,22 +71,22 @@ router.post('/login', usersController.loginUser);
 //reset password
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
-
+  
   try {
     const user = await usersModel.findUserByEmail(email);
-    if (!user) {
+    if (user.rowCount == 0) {
       return res.status(404).json({ message: 'User not found' });
     }
     
     //generating a token for reset password
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
+    const resetTokenExpiry = (Date.now() + 60000*10); // Expires in 1 minute
 
-    await usersModel.updatePasswordResetToken(user.id, resetToken, resetTokenExpiry);
-
+    await usersModel.updatePasswordResetToken(user.rows[0].user_id, resetToken, resetTokenExpiry);
+    
     const resetLink = `http://localhost:3001/users/reset-password?token=${resetToken}`;
-    await sendEmail(user.email, 'Password Reset', `Click here to reset your password: ${resetLink}`);
-
+    sendEmail(user.rows[0].email, 'Password Reset', `Click here to reset your password: ${resetLink}`);
+    
     res.status(200).json({ message: 'Password reset email sent' });
   } catch (error) {
     console.error(error);

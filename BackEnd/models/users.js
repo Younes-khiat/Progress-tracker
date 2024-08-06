@@ -64,8 +64,8 @@ const updatePasswordResetToken = async (userId, token, expiry) => {
 //find user by resetToken to update his
 const findUserByResetToken = async (token) => {
   try {
-    const result = await pool.query('SELECT * FROM users WHERE reset_token = $1', [token]);
-    return result.rows[0] && result.rowCount;
+    return (await pool.query('SELECT * FROM users WHERE resettoken = $1', [token]));
+    
   } catch (error) {
     console.error(error);
     throw error;

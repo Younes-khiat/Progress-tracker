@@ -89,19 +89,19 @@ const loginUser = async (req, res) => {
 //reseting password
 const resetPassword = async (req,res) => {
   const { resetToken, newPassword } = req.body;
-
+  console.log(req.body);
   try {
     const user = await usersModel.findUserByResetToken(resetToken);
     if (!user) {
       return res.status(400).json({ message: 'Invalid token' });
     }
-
+    console.log(1);
     //verifying if the token still usable
     const now = Date.now() + 60000;
     if (user.rows[0].resettokenexpiry < now) {
         res.status(400).json({ message: 'resetToken expired try over later' });
     }
-
+    console.log(2);
     // Password strength check
     if (!validator.isStrongPassword(newPassword, {
       minLength: 8,
@@ -112,10 +112,11 @@ const resetPassword = async (req,res) => {
     })) {
       throw new Error('Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one symbol');
     }
-
+    console.log(3);
+    console.log(user.rows[0].user_id);
     //hashing the password and save it in the data base
-    const hashedPassword = bcrypt.hash(newPassword, 10);
-    await usersModel.updateUserPassword(user.id, hashedPassword, null, null); // Invalidate reset token
+    
+    await usersModel.updateUserPassword(user.rows[0].user_id, newPassword); // Invalidate reset token
 
     res.status(200).json({ message: 'Password reset successful' });
   } catch (error) {
