@@ -6,7 +6,6 @@ const usersModel = require('../models/users');
 const sendEmail = require('./sendEmailVerification');
 require('dotenv').config();
 
-
 const createUser = async (req, res) => {
   try {
     // Basic input validation
@@ -125,4 +124,43 @@ const resetPassword = async (req,res) => {
   }
 }
 
-module.exports = { createUser, loginUser, resetPassword};
+//get user profle
+const getUserProfile = async (req, res) => {
+  try {
+    const email = req.query; 
+    const user = await models.findUserByEmail(email);
+
+    res.json(user.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+//update users profile
+const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.query;
+    const { name, surname, username, profile_picture, email} = req.body;
+
+    // Input validation and sanitization
+    //lets keep the picture for later
+    if (!validator.isEmail(email)) {
+      res.stetus(500).json({message: "invalid email format"});
+    }
+
+    // Sanitization
+    const sanitizedName = validator.escape(name);
+    const sanitizedSurname = validator.escape(surname);
+    const sanitizedUsername = validator.escape(username);
+    const sanitizedEmail = validator.normalizeEmail(email);
+
+    const user = await models.updateUserProfile(sanitizedName, sanitizedSurname, sanitizedUsername, sanitizedEmail);
+    res.json(user.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { createUser, loginUser, resetPassword, getUserProfile, updateUserProfile};

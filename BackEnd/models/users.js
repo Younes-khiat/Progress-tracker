@@ -83,6 +83,12 @@ const updateUserPassword = async (userId, newPassword) => {
   }
 };
 
+//update user profile
+const updateUserProfile = async ( name, surname, username, email, profilePicture) => {
+  return (await pool.query('UPDATE users SET name = $1, surname = $2, username = $3, profile_picture = $4, email = $5 WHERE id = $6 RETURNING *', 
+            [name, surname, username, profile_picture, email, userId]));
+}
+
 module.exports = { createUser,
                    findUserByEmail,
                    findUserByVerificationToken, 
@@ -90,5 +96,6 @@ module.exports = { createUser,
                    updateVerificationToken, 
                    updatePasswordResetToken,
                    updateUserPassword,
-                   findUserByResetToken
+                   findUserByResetToken,
+                   updateUserProfile
                   };

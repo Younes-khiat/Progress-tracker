@@ -97,4 +97,11 @@ router.post('/forgot-password', async (req, res) => {
 //reseting password
 router.post('/reset-password', usersController.resetPassword);
 
+//get user's profile
+router.get('/profile', usersController.getUserProfile); 
+
+//update user's profile
+router.put('/profile', usersController.updateUserProfile); 
+
+
 module.exports = router;
