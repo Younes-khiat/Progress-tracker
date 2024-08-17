@@ -4,6 +4,7 @@ const router = express.Router();
 const usersController = require('../controllers/users');
 const usersModel = require('../models/users');
 const sendEmail = require('../controllers/sendEmailVerification');
+const verifyToken = require('../controllers/verifyToken');
 
 //registring link
 router.post('/register', usersController.createUser);
@@ -64,7 +65,7 @@ router.post('/resend-verification', async (req, res) => {
       res.status(500).json({ message: 'Error resending verification email' });
     }
   });
-
+  
 //logging link 
 router.post('/login', usersController.loginUser);  
 
@@ -98,10 +99,10 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', usersController.resetPassword);
 
 //get user's profile
-router.get('/profile', usersController.getUserProfile); 
+router.get(`/profile`, verifyToken, usersController.getUserProfile);
 
 //update user's profile
-router.put('/profile', usersController.updateUserProfile); 
+router.put('/profile', verifyToken, usersController.updateUserProfile); 
 
 
 module.exports = router;

@@ -84,9 +84,9 @@ const updateUserPassword = async (userId, newPassword) => {
 };
 
 //update user profile
-const updateUserProfile = async ( name, surname, username, email, profilePicture) => {
-  return (await pool.query('UPDATE users SET name = $1, surname = $2, username = $3, profile_picture = $4, email = $5 WHERE id = $6 RETURNING *', 
-            [name, surname, username, profile_picture, email, userId]));
+const updateUserProfile = async ( name, surname, username, email, userId) => {
+  return (await pool.query('UPDATE users SET name = $1, surname = $2, user_name = $3, email = $4 WHERE user_id = $5 RETURNING *', 
+            [name, surname, username, email, userId]));
 }
 
 module.exports = { createUser,

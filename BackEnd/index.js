@@ -4,6 +4,7 @@ const userRouter = require('./routes/users') //importing creating user router
 const protectedRouter = require('./routes/protected');//importing protected code that need authentification
 const app = express();
 const port = 3001;
+require('dotenv').config();
 
 
 app.use(express.json());

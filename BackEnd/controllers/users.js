@@ -76,8 +76,8 @@ const loginUser = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1m' });//modify this
-
+    const secret = process.env.JWT_SECRET;
+    const token = jwt.sign({ userId: user.rows[0].user_id }, secret, { algorithm: 'HS256', expiresIn: '1h' });//modify this
     res.json({ token });
   } catch (error) {
     console.error(error);
@@ -127,9 +127,8 @@ const resetPassword = async (req,res) => {
 //get user profle
 const getUserProfile = async (req, res) => {
   try {
-    const email = req.query; 
-    const user = await models.findUserByEmail(email);
-
+    const {email} = req.query; 
+    const user = await usersModel.findUserByEmail(email);
     res.json(user.rows[0]);
   } catch (err) {
     console.error(err);
@@ -140,22 +139,25 @@ const getUserProfile = async (req, res) => {
 //update users profile
 const updateUserProfile = async (req, res) => {
   try {
-    const userId = req.query;
+    const {userId} = req.query;
     const { name, surname, username, profile_picture, email} = req.body;
-
+    console.log(1);
     // Input validation and sanitization
     //lets keep the picture for later
-    if (!validator.isEmail(email)) {
+    if (email && !validator.isEmail(email)) {
       res.stetus(500).json({message: "invalid email format"});
     }
-
+    console.log(2);
     // Sanitization
-    const sanitizedName = validator.escape(name);
-    const sanitizedSurname = validator.escape(surname);
-    const sanitizedUsername = validator.escape(username);
-    const sanitizedEmail = validator.normalizeEmail(email);
-
-    const user = await models.updateUserProfile(sanitizedName, sanitizedSurname, sanitizedUsername, sanitizedEmail);
+    const sanitizedName = name && validator.escape(name);
+    console.log(3);
+    const sanitizedSurname = surname && validator.escape(surname);
+    console.log(4);
+    const sanitizedUsername = username && validator.escape(username);
+    console.log(5);
+    const sanitizedEmail = email && validator.normalizeEmail(email);
+    console.log(6);
+    const user = await usersModel.updateUserProfile(sanitizedName, sanitizedSurname, sanitizedUsername, sanitizedEmail, userId);
     res.json(user.rows[0]);
   } catch (err) {
     console.error(err);
@@ -163,4 +165,4 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-module.exports = { createUser, loginUser, resetPassword, getUserProfile, updateUserProfile};
+module.exports = { createUser, loginUser, resetPassword,getUserProfile, updateUserProfile};
