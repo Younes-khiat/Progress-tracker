@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const validator= require('validator');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const usersModel = require('../models/users');
 const sendEmail = require('./sendEmailVerification');
 require('dotenv').config();
@@ -9,8 +10,8 @@ require('dotenv').config();
 const createUser = async (req, res) => {
   try {
     // Basic input validation
-    const {name, surname, username, profilePicture, email, password } = req.body;
-    if (!name || !surname || !username || !email || !password ) {
+    const {name, surname, username, email, password } = req.body;
+    if (!name || !surname || !username || !email || !password || !req.file) {
       return res.status(400).json({ message: 'Missing required informations' });
     }
     
@@ -34,10 +35,26 @@ const createUser = async (req, res) => {
     //generating a token
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
-    console.log((verificationTokenExpiry));
+
+    const { buffer, originalname, mimetype } = req.file;
+    // Validate image type and size
+    if (!['image/jpeg', 'image/png', 'image/gif'].includes(mimetype)) {
+      return res.status(400).json({ error: 'Invalid image type' });
+    }
+  
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Image size exceeds limit' });
+    }
+  
+    // Generate a unique filename
+    const filename = `${Date.now()}-${originalname}`;
+    const targetPath = path.join('BackEnd\controllers\Users Pictures',filename);
+
+    // Write image to file system
+    await fs.promises.writeFile(targetPath, buffer);
 
     // Creating the user
-    const newUser = await usersModel.createUser({name, surname, username, profilePicture, email, password, verificationToken, verificationTokenExpiry });
+    const newUser = await usersModel.createUser({name, surname, username, targetPath, email, password, verificationToken, verificationTokenExpiry });
 
     // Send verification email
     const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
@@ -111,8 +128,6 @@ const resetPassword = async (req,res) => {
     })) {
       throw new Error('Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one symbol');
     }
-    console.log(3);
-    console.log(user.rows[0].user_id);
     //hashing the password and save it in the data base
     
     await usersModel.updateUserPassword(user.rows[0].user_id, newPassword); // Invalidate reset token
@@ -139,25 +154,39 @@ const getUserProfile = async (req, res) => {
 //update users profile
 const updateUserProfile = async (req, res) => {
   try {
-    const {userId} = req.query;
-    const { name, surname, username, profile_picture, email} = req.body;
-    console.log(1);
+    const { userId, name, surname, username, profile_picture, email, newName, newSurname, newUsername, newEmail} = req.body;
+
     // Input validation and sanitization
-    //lets keep the picture for later
-    if (email && !validator.isEmail(email)) {
+    if (email && !validator.isEmail(newEmail)) {
       res.stetus(500).json({message: "invalid email format"});
     }
-    console.log(2);
+    
     // Sanitization
-    const sanitizedName = name && validator.escape(name);
-    console.log(3);
-    const sanitizedSurname = surname && validator.escape(surname);
-    console.log(4);
-    const sanitizedUsername = username && validator.escape(username);
-    console.log(5);
-    const sanitizedEmail = email && validator.normalizeEmail(email);
-    console.log(6);
-    const user = await usersModel.updateUserProfile(sanitizedName, sanitizedSurname, sanitizedUsername, sanitizedEmail, userId);
+    const sanitizedName = newName && validator.escape(newName);
+    const sanitizedSurname = newSurname && validator.escape(newSurname);
+    const sanitizedUsername = newUsername && validator.escape(newUsername);
+    const sanitizedEmail = newEmail && validator.normalizeEmail(newEmail);
+
+    if (req.file) {
+      const { buffer, originalname, mimetype } = req.file;
+  
+      // Validate image type and size
+      if (!['image/jpeg', 'image/png', 'image/gif'].includes(mimetype)) {
+        return res.status(400).json({ error: 'Invalid image type' });
+      }
+  
+      if (buffer.length > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: 'Image size exceeds limit' });
+      }
+  
+      // Generate a unique filename
+      const filename = `${Date.now()}-${originalname}`;
+      const newTargetPath = path.join('BackEnd\controllers\Users Pictures',filename);
+    }
+    // Write image to file system
+    await fs.promises.writeFile(newTargetPath, buffer);
+
+    const user = await usersModel.updateUserProfile(sanitizedName, sanitizedSurname, sanitizedUsername,newTargetPath, sanitizedEmail, userId);
     res.json(user.rows[0]);
   } catch (err) {
     console.error(err);

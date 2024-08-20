@@ -41,7 +41,7 @@ const createUser = async (user) => {
     // Create the user
     const newUser = await pool.query(
       'INSERT INTO users (name, surname, user_name, profile_picture, email, password, token, tokenexpiry) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [user.name, user.surname, user.username, user.profilePicture, user.email, hashedPassword, user.verificationToken, user.verificationTokenExpiry]
+      [user.name, user.surname, user.username, user.targetPath, user.email, hashedPassword, user.verificationToken, user.verificationTokenExpiry]
     );
 
     return newUser.rows[0];
@@ -84,8 +84,8 @@ const updateUserPassword = async (userId, newPassword) => {
 };
 
 //update user profile
-const updateUserProfile = async ( name, surname, username, email, userId) => {
-  return (await pool.query('UPDATE users SET name = $1, surname = $2, user_name = $3, email = $4 WHERE user_id = $5 RETURNING *', 
+const updateUserProfile = async ( name, surname, username, path, email, userId) => {
+  return (await pool.query('UPDATE users SET name = $1, surname = $2, user_name = $3,profile_picture = $4, email = $5 WHERE user_id = $6 RETURNING *', 
             [name, surname, username, email, userId]));
 }
 
