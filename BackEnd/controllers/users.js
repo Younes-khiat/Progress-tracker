@@ -6,15 +6,21 @@ const path = require('path');
 const usersModel = require('../models/users');
 const sendEmail = require('./sendEmailVerification');
 require('dotenv').config();
-
+const fs = require('fs/promises');
 const createUser = async (req, res) => {
   try {
     // Basic input validation
-    const {name, surname, username, email, password } = req.body;
-    if (!name || !surname || !username || !email || !password || !req.file) {
-      return res.status(400).json({ message: 'Missing required informations' });
+    // const {name, surname, username, email, password } = req.body;
+    // if (!name || !surname || !username || !email || !password ) {
+    //   return res.status(400).json({ message: 'Missing required informations' });
+    // }
+    const requiredFields = ['name', 'surname', 'username', 'email', 'password'];
+    for (const field of requiredFields) {
+      if (!req.body[field]) {
+        return res.status(400).json({ message: `Missing required field: ${field}` });
+      }
     }
-    
+    const {name, surname, username, email, password, profilePicture } = req.body;
     //checking if user already exists
     const existingUser = await usersModel.findUserByEmail(email);
     if (existingUser.rowCount > 0) {
@@ -36,31 +42,50 @@ const createUser = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
 
-    const { buffer, originalname, mimetype } = req.file;
-    // Validate image type and size
-    if (!['image/jpeg', 'image/png', 'image/gif'].includes(mimetype)) {
-      return res.status(400).json({ error: 'Invalid image type' });
+    //the function that takes the image from it's folder and save in another folder in the specidied location
+    async function extractImageInfo(imagePath) {
+      try {
+        //read the image from the path user provides
+        const imageBuffer = await fs.readFile(imagePath);
+        const mimetype = path.extname(imagePath).replace('.', '');
+        const originalName = path.basename(imagePath);
+
+        // Validate image type and size
+        if (!['JPEG', 'PNG', 'GIF'].includes(mimetype)) {
+          return res.status(400).json({ error: 'Invalid image type' });
+        }
+        if (imageBuffer.length > 5 * 1024 * 1024) {
+          return res.status(400).json({ error: 'Image size exceeds limit' });
+        }
+
+        // Generate a unique filename
+        const filename = `${Date.now()}-${originalName}`;
+        const targetPath = path.join('controllers/Users_Pictures',filename);
+        
+        //create the image file inside Users_Pictures
+        await fs.writeFile(targetPath, imageBuffer);
+
+      return targetPath;
+      } catch (error) {
+        console.error('Error extracting image info:', error);
+        throw error;
+      }
     }
-  
-    if (buffer.length > 5 * 1024 * 1024) {
-      return res.status(400).json({ error: 'Image size exceeds limit' });
-    }
-  
-    // Generate a unique filename
-    const filename = `${Date.now()}-${originalname}`;
-    const targetPath = path.join('BackEnd\controllers\Users Pictures',filename);
+    await (async () => {
+      try {
+        const targetPath = await extractImageInfo(profilePicture);
+        // Creating the user
+        newUser = await usersModel.createUser({name, surname, username, targetPath, email, password, verificationToken, verificationTokenExpiry });
 
-    // Write image to file system
-    await fs.promises.writeFile(targetPath, buffer);
-
-    // Creating the user
-    const newUser = await usersModel.createUser({name, surname, username, targetPath, email, password, verificationToken, verificationTokenExpiry });
-
-    // Send verification email
-    const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
-    sendEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
-    res.status(201).json({ message: 'User created. Please verify your email.' });
-
+        // Send verification email
+        const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
+        await sendEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
+        return newUser ;
+    
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    })();
     res.status(201).json(newUser);
   } catch (error) {
     console.error(error);
