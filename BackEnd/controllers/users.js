@@ -2,18 +2,13 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const validator= require('validator');
 const jwt = require('jsonwebtoken');
-const path = require('path');
 const usersModel = require('../models/users');
 const sendEmail = require('./sendEmailVerification');
 require('dotenv').config();
-const fs = require('fs/promises');
+const extractImageInfo = require ('./extractImageInfo');
+
 const createUser = async (req, res) => {
   try {
-    // Basic input validation
-    // const {name, surname, username, email, password } = req.body;
-    // if (!name || !surname || !username || !email || !password ) {
-    //   return res.status(400).json({ message: 'Missing required informations' });
-    // }
     const requiredFields = ['name', 'surname', 'username', 'email', 'password'];
     for (const field of requiredFields) {
       if (!req.body[field]) {
@@ -42,50 +37,14 @@ const createUser = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
 
-    //the function that takes the image from it's folder and save in another folder in the specidied location
-    async function extractImageInfo(imagePath) {
-      try {
-        //read the image from the path user provides
-        const imageBuffer = await fs.readFile(imagePath);
-        const mimetype = path.extname(imagePath).replace('.', '');
-        const originalName = path.basename(imagePath);
+    const targetPath = await extractImageInfo(profilePicture);
+    // Creating the user
+    const newUser = await usersModel.createUser({name, surname, username, targetPath, email, password, verificationToken, verificationTokenExpiry });
 
-        // Validate image type and size
-        if (!['JPEG', 'PNG', 'GIF'].includes(mimetype)) {
-          return res.status(400).json({ error: 'Invalid image type' });
-        }
-        if (imageBuffer.length > 5 * 1024 * 1024) {
-          return res.status(400).json({ error: 'Image size exceeds limit' });
-        }
-
-        // Generate a unique filename
-        const filename = `${Date.now()}-${originalName}`;
-        const targetPath = path.join('controllers/Users_Pictures',filename);
-        
-        //create the image file inside Users_Pictures
-        await fs.writeFile(targetPath, imageBuffer);
-
-      return targetPath;
-      } catch (error) {
-        console.error('Error extracting image info:', error);
-        throw error;
-      }
-    }
-    await (async () => {
-      try {
-        const targetPath = await extractImageInfo(profilePicture);
-        // Creating the user
-        newUser = await usersModel.createUser({name, surname, username, targetPath, email, password, verificationToken, verificationTokenExpiry });
-
-        // Send verification email
-        const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
-        await sendEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
-        return newUser ;
+    // Send verification email
+    const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;//remember to modify this ------------------------
+    await sendEmail(email, 'Verify Your Email', `Click here to verify your email: ${link}`);
     
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    })();
     res.status(201).json(newUser);
   } catch (error) {
     console.error(error);
@@ -179,44 +138,31 @@ const getUserProfile = async (req, res) => {
 //update users profile
 const updateUserProfile = async (req, res) => {
   try {
-    const { userId, name, surname, username, profile_picture, email, newName, newSurname, newUsername, newEmail} = req.body;
+    const { userId, email, newName, newSurname, newUsername, newProfile_picture, newEmail} = req.body;
 
     // Input validation and sanitization
     if (email && !validator.isEmail(newEmail)) {
       res.stetus(500).json({message: "invalid email format"});
     }
-    
+    const oldUser = await usersModel.findUserByEmail(req.query.email);
     // Sanitization
-    const sanitizedName = newName && validator.escape(newName);
-    const sanitizedSurname = newSurname && validator.escape(newSurname);
-    const sanitizedUsername = newUsername && validator.escape(newUsername);
-    const sanitizedEmail = newEmail && validator.normalizeEmail(newEmail);
-
-    if (req.file) {
-      const { buffer, originalname, mimetype } = req.file;
-  
-      // Validate image type and size
-      if (!['image/jpeg', 'image/png', 'image/gif'].includes(mimetype)) {
-        return res.status(400).json({ error: 'Invalid image type' });
-      }
-  
-      if (buffer.length > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: 'Image size exceeds limit' });
-      }
-  
-      // Generate a unique filename
-      const filename = `${Date.now()}-${originalname}`;
-      const newTargetPath = path.join('BackEnd\controllers\Users Pictures',filename);
-    }
-    // Write image to file system
-    await fs.promises.writeFile(newTargetPath, buffer);
-
-    const user = await usersModel.updateUserProfile(sanitizedName, sanitizedSurname, sanitizedUsername,newTargetPath, sanitizedEmail, userId);
-    res.json(user.rows[0]);
+    const sanitizedName = (newName && validator.escape(newName)) || (oldUser.rows[0].name);
+    const sanitizedSurname = (newSurname && validator.escape(newSurname)) || (oldUser.rows[0].surname);
+    const sanitizedUsername = (newUsername && validator.escape(newUsername)) || (oldUser.rows[0].user_name);
+    const sanitizedEmail = (newEmail && validator.normalizeEmail(newEmail)) || (oldUser.rows[0].email);
+    const profilePicture = oldUser.rows[0].profile_picture;
+    
+    //getting the new image the user provided
+    const targetPath = newProfile_picture? (await extractImageInfo(newProfile_picture)) : (profilePicture);
+      // u^dating user data
+      const newUser = await usersModel.updateUserProfile({sanitizedName, sanitizedSurname, sanitizedUsername, targetPath, sanitizedEmail, userId });
+      console.log(newUser);    
+    
+    res.status(201).json(newUser);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
-  }
-};
+  };
+}
 
 module.exports = { createUser, loginUser, resetPassword,getUserProfile, updateUserProfile};

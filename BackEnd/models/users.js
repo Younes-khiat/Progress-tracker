@@ -84,9 +84,15 @@ const updateUserPassword = async (userId, newPassword) => {
 };
 
 //update user profile
-const updateUserProfile = async ( name, surname, username, path, email, userId) => {
-  return (await pool.query('UPDATE users SET name = $1, surname = $2, user_name = $3,profile_picture = $4, email = $5 WHERE user_id = $6 RETURNING *', 
-            [name, surname, username, email, userId]));
+const updateUserProfile = async ( user) => {
+  try {
+    const newUser = await pool.query('UPDATE users SET name = $1, surname = $2, user_name = $3,profile_picture = $4, email = $5 WHERE user_id = $6 RETURNING *', 
+              [user.sanitizedName, user.sanitizedSurname, user.sanitizedUsername, user.targetPathpath, user.sanitizedEmail, user.userId]);
+    return newUser.rows[0];
+  } catch (error) {
+    console.error(error);
+    // res.status(500).json({ message: 'An error occurred while creating the user' });
+  }
 }
 
 module.exports = { createUser,
