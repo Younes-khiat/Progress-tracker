@@ -1,6 +1,7 @@
 //و منذ متى يخشى المنايا مريدها
 const express = require('express'); //importing express from npm
 const userRouter = require('./routes/users') //importing creating user router
+const homeRouter = require('./routes/home')
 const protectedRouter = require('./routes/protected');//importing protected code that need authentification
 const app = express();
 const port = 3001;
@@ -10,7 +11,7 @@ require('dotenv').config();
 app.use(express.json());
 app.use('/users', userRouter);
 app.use('/protected', protectedRouter);
-
+app.use('/home', homeRouter)
 // app.get('/test', async (req, res) => {
 //     try {
 //       const client = await pool.connect();
