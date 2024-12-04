@@ -7,11 +7,11 @@ const getFavoritesByUserId = async (userId) => {
 
 // Fetch a preview of activities by type
 const getActivityPreviewByType = async (userId, activityType, limit = 5) => {
-  return await pool.query(`SELECT * from $2 WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`, [userId, activityType, limit]);
+  return await pool.query(`SELECT * from ${activityType} WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`, [userId, limit]);
 };
 
 const getYoutubePlaylists = async (userId) => {
-    return await pool.query( `SELECT * from youtube_playlists WHERE userId = $1`, [userId]);
+    return await pool.query( `SELECT * from youtube_playlists WHERE user_id = $1`, [userId]);
 }
 module.exports = {
     getFavoritesByUserId, getActivityPreviewByType, getYoutubePlaylists

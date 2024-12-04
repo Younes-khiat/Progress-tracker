@@ -37,7 +37,7 @@ const createUser = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
 
-    const targetPath = await extractImageInfo(profilePicture);
+    const targetPath =  profilePicture ? await extractImageInfo(profilePicture) : "";
     // Creating the user
     const newUser = await usersModel.createUser({name, surname, username, targetPath, email, password, verificationToken, verificationTokenExpiry });
 
@@ -78,7 +78,7 @@ const loginUser = async (req, res) => {
 
     // Generate JWT token
     const secret = process.env.JWT_SECRET;
-    const token = jwt.sign({ userId: user.rows[0].user_id }, secret, { algorithm: 'HS256', expiresIn: '1h' });//modify this
+    const token = jwt.sign({ userId: user.rows[0].user_id }, secret, { algorithm: 'HS256', expiresIn: '3h' });//modify this
     res.json({ token });
   } catch (error) {
     console.error(error);
@@ -95,13 +95,11 @@ const resetPassword = async (req,res) => {
     if (!user) {
       return res.status(400).json({ message: 'Invalid token' });
     }
-    console.log(1);
     //verifying if the token still usable
     const now = Date.now() + 60000;
     if (user.rows[0].resettokenexpiry < now) {
         res.status(400).json({ message: 'resetToken expired try over later' });
     }
-    console.log(2);
     // Password strength check
     if (!validator.isStrongPassword(newPassword, {
       minLength: 8,
@@ -114,7 +112,7 @@ const resetPassword = async (req,res) => {
     }
     //hashing the password and save it in the data base
     
-    await usersModel.updateUserPassword(user.rows[0].user_id, newPassword); // Invalidate reset token
+    await usersModel.updateUserPassword(user.rows[0].id, newPassword); // Invalidate reset token
 
     res.status(200).json({ message: 'Password reset successful' });
   } catch (error) {

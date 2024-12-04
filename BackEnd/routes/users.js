@@ -26,8 +26,8 @@ router.get('/verify-email', async (req, res) => {
     
         //verifying if the token still usable
         const now = Date.now() + 60000;
-        if (user.rows[0].tokenexpiry < now) {
-            console.log(1);
+        console.log(user.rows[0]);
+        if (user.rows[0].token < now) {
             res.status(400).json({ message: 'Token expired' });
             res.redirect('/resend-verification');//if not usable resend verification email
         }
@@ -54,7 +54,8 @@ router.post('/resend-verification', async (req, res) => {
       // Generate a new verification token and update the user token infos
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const verificationTokenExpiry = (Date.now() + 60000); // Expires in 1 minute
-      await usersModel.updateVerificationToken(user.rows[0].user_id, verificationToken, verificationTokenExpiry);
+      console.log(verificationToken, verificationTokenExpiry);
+      await usersModel.updateVerificationToken(user.rows[0].id, verificationToken, verificationTokenExpiry);
 
       // Send the verification email
       const link = `http://localhost:3001/users/verify-email?token=${verificationToken}`;
@@ -83,7 +84,7 @@ router.post('/forgot-password', async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = (Date.now() + 60000*10); // Expires in 1 minute
 
-    await usersModel.updatePasswordResetToken(user.rows[0].user_id, resetToken, resetTokenExpiry);
+    await usersModel.updatePasswordResetToken(user.rows[0].id, resetToken, resetTokenExpiry);
     
     const resetLink = `http://localhost:3001/users/reset-password?token=${resetToken}`;
     sendEmail(user.rows[0].email, 'Password Reset', `Click here to reset your password: ${resetLink}`);

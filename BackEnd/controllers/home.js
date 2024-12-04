@@ -1,6 +1,6 @@
-const homeModel = require('../models');
+const homeModel = require('../models/home');
 
-const activityTypes = ['YouTube', 'Books', 'Podcasts']; 
+const activityTypes = ['youtube_playlists']; 
 
 // Home Page
 const getHomeData = async (req, res) => {
@@ -10,14 +10,13 @@ const getHomeData = async (req, res) => {
     if (!user_id) {
       return res.status(400).json({ error: 'User ID is required.' });
     }
-
+    console.log("1");
     // Fetch all favorites for the user
     const favorites = await homeModel.getFavoritesByUserId(user_id);
-
     // Fetch previews for each activity type
     const previews = {};
     for (const type of activityTypes) {
-      previews[type] = await homeModel.getActivityPreviewByType(type);
+      previews[type] = await homeModel.getActivityPreviewByType(user_id, type);
     }
 
     // Send response
@@ -26,7 +25,6 @@ const getHomeData = async (req, res) => {
       previews,
     });
   } catch (error) {
-    console.error('Error fetching home data:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -40,7 +38,11 @@ const displayYoutubePlaylists = async (req, res) => {
 
     const youtubePlaylists = await homeModel.getYoutubePlaylists(user_id);
     
-    res.status(200).json({youtubePlaylists});
+    res.status(200).json({
+      "message":"ok",
+      youtubePlaylists
+
+    });
 
   } catch (error) {
     console.error('Error fetching youtube playlists:', error);

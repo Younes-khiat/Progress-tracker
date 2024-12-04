@@ -15,7 +15,7 @@ const findUserByVerificationToken = async (token) => {
 //verifying the email of the user
 const verifyUser = async (userId) => {
   try {
-    await pool.query('UPDATE users SET user_status = true, tokenexpiry = null WHERE user_id = $1', [userId]);
+    await pool.query('UPDATE users SET user_status = true, token_expiry = null WHERE id = $1', [userId]);
   } catch (error) {
     console.error(error);
     throw error;
@@ -23,9 +23,9 @@ const verifyUser = async (userId) => {
 };
 
 //updating the token in the databse
-const updateVerificationToken = async (userId, verificationToken, verificationTokenExpiry) => {
+const updateVerificationToken = async (userId, verificationToken, verificationtoken_expiry) => {
   try {
-    await pool.query('UPDATE users SET token = $1, tokenexpiry = $2 WHERE user_id = $3', [verificationToken, verificationTokenExpiry, userId]);
+    await pool.query('UPDATE users SET token = $1, token_expiry = $2 WHERE id = $3', [verificationToken, verificationtoken_expiry, userId]);
   } catch (error) {
     console.error(error);
     throw error;
@@ -40,8 +40,8 @@ const createUser = async (user) => {
 
     // Create the user
     const newUser = await pool.query(
-      'INSERT INTO users (name, surname, user_name, profile_picture, email, password, token, tokenexpiry) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [user.name, user.surname, user.username, user.targetPath, user.email, hashedPassword, user.verificationToken, user.verificationTokenExpiry]
+      'INSERT INTO users (name, surname, user_name, profile_picture, email, password, token, token_expiry) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [user.name, user.surname, user.username, user.targetPath, user.email, hashedPassword, user.verificationToken, user.verificationtoken_expiry]
     );
 
     return newUser.rows[0];
@@ -54,17 +54,17 @@ const createUser = async (user) => {
 //update the token of reset password
 const updatePasswordResetToken = async (userId, token, expiry) => {
   try {
-    await pool.query('UPDATE users SET resettoken = $1, resettokenexpiry = $2 WHERE user_id = $3', [token, expiry, userId]);
+    await pool.query('UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3', [token, expiry, userId]);
   } catch (error) {
     console.error(error);
     throw error;
   }
 };
 
-//find user by resetToken to update his
+//find user by reset_token to update his
 const findUserByResetToken = async (token) => {
   try {
-    return (await pool.query('SELECT * FROM users WHERE resettoken = $1', [token]));
+    return (await pool.query('SELECT * FROM users WHERE reset_token = $1', [token]));
     
   } catch (error) {
     console.error(error);
@@ -76,7 +76,7 @@ const findUserByResetToken = async (token) => {
 const updateUserPassword = async (userId, newPassword) => {
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password = $1, resettoken = NULL, resettokenexpiry = NULL WHERE user_id = $2', [hashedPassword, userId]);
+    await pool.query('UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2', [hashedPassword, userId]);
   } catch (error) {
     console.error(error);
     throw error;

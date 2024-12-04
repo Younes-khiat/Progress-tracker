@@ -1,5 +1,7 @@
 const express = require('express');
 const homeController = require('../controllers/home');
+const verifyToken = require('../controllers/verifyToken'); 
+
 
 const router = express.Router();
 

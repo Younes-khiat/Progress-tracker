@@ -7,7 +7,6 @@ const app = express();
 const port = 3001;
 require('dotenv').config();
 
-
 app.use(express.json());
 app.use('/users', userRouter);
 app.use('/protected', protectedRouter);
